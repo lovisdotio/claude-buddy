@@ -1,12 +1,14 @@
 # Claude Buddy
 
-<p align="center"><img src="docs/buddy.gif" width="460" alt="Claude Buddy, a small round ivory character, hopping over a Claude Code answer"></p>
+![Claude Buddy](docs/banner.jpg)
 
 A tiny animated companion that floats over VS Code and reacts to what Claude Code is doing. It thinks while Claude works, cheers when it's done and frowns at errors. Ask it and it reads the answer out loud, or turns it into a short 1939-style cartoon explainer. *Still a prototype.*
 
 ## Meet the buddy
 
 It has 100+ expressions, and picks one from what Claude is doing and saying.
+
+<p align="center"><img src="docs/buddy.gif" width="460" alt="Claude Buddy hopping over a Claude Code answer"></p>
 
 ![The buddy's expressions: hello, sleepy, idea, editing code, talking, whispering, waiting, done, shipped, error, confused, thanks](docs/expressions.gif)
 
