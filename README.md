@@ -8,8 +8,6 @@ A tiny animated companion that floats over VS Code and reacts to what Claude Cod
 
 It has 100+ expressions, and picks one from what Claude is doing and saying.
 
-<p align="center"><img src="docs/buddy.gif" width="460" alt="Claude Buddy hopping over a Claude Code answer"></p>
-
 ![The buddy's expressions: hello, sleepy, idea, editing code, talking, whispering, waiting, done, shipped, error, confused, thanks](docs/expressions.gif)
 
 ## 1939 video mode in action
