@@ -6,7 +6,7 @@ Usage : explain.py <full|summary> <dossier>   (FAL_KEY dans l'environnement, jam
 - full    : TOUT le texte, mot pour mot, coupé aux fins de phrase en morceaux de ~60 mots (≈ 15 s chacun)
 - summary : un résumé de ~55 mots → un seul clip
 - un LLM rapide (OpenRouter sur fal) écrit pour chaque morceau une scène 1939 qui l'illustre (sans aucun écrit)
-- 3 clips générés en avance, dans l'ordre ; les clips arrivent dans <dossier>/NN.mp4 au fil de l'eau ; l'avancement est dans <dossier>/status.json
+- un clip généré à la fois, dans l'ordre (le suivant pendant la lecture du précédent) ; les clips arrivent dans <dossier>/NN.mp4 au fil de l'eau ; l'avancement est dans <dossier>/status.json
 """
 import json, os, re, sys, time, urllib.error, urllib.request
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -20,7 +20,7 @@ H3 = "minimax/h3-max/text-to-video/lora"
 LORA = ("https://huggingface.co/lovis93/studio-1939-old-animation-lora-minimax-h3/resolve/"
         "19214d4c3989de6caca673d534d0d4b16b73b0f7/studio1939-strong.safetensors")
 WORDS_PER_CLIP = 60          # débit validé par Lovis : ~60 mots en 15 s, « pas plus rapide »
-AHEAD = 3                    # 3 clips en avance : dès qu'un clip est fini, le suivant part (arrêt = rien d'autre payé)
+AHEAD = 1                    # un seul clip à la fois : le 1er se joue pendant que le suivant se génère (arrêt = rien d'autre payé)
 
 status = {"mode": MODE, "total": 0, "ready": [], "durations": [], "error": None, "finished": False}
 
@@ -153,7 +153,7 @@ def make_clip(i, chunk, language):
               f"One continuous off-screen narrator voice-over across all shots, nobody on screen speaks: a brisk, enthusiastic 1939 {language} newsreel announcer, "
               f"speaking quite fast and very clearly, says exactly: \"{chunk['text']}\" "
               f"Light vintage orchestral music very low under the voice. No text, no subtitles.")
-    body = {"prompt": prompt, "duration": duration(words), "resolution": "480P", "aspect_ratio": "1:1",
+    body = {"prompt": prompt, "duration": duration(words), "resolution": "768P", "aspect_ratio": "1:1",
             "prompt_expansion_mode": "disabled", "loras": [{"path": LORA, "scale": 1.0}]}
     for attempt in range(3):
         try:
@@ -188,7 +188,7 @@ def main():
     status["durations"] = [duration(len(c["text"].split())) for c in chunks]
     (RUN / "plan.json").write_text(json.dumps({"language": language, "chunks": chunks}, ensure_ascii=False, indent=1))
     save_status()
-    # le pool lance les clips dans l'ordre, 3 à la fois : le 1er arrive vite, les suivants pendant la lecture
+    # les clips sont générés un par un, dans l'ordre : chacun se prépare pendant que le précédent se joue
     with ThreadPoolExecutor(AHEAD) as pool:
         futures = {pool.submit(make_clip, i, c, language): i for i, c in enumerate(chunks)}
         for f in as_completed(futures):

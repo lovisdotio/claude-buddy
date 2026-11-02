@@ -24,8 +24,8 @@ The buddy is only visible while VS Code is the frontmost app. It follows whichev
 
 1. The answer is cleaned (code blocks, links and markdown are removed) and split at sentence ends into chunks of about 60 words.
 2. A fast LLM (`google/gemini-3-flash-preview` through fal's OpenRouter endpoint) writes one 1939 cartoon scene per chunk. The scenes are visual metaphors, with no writing on screen.
-3. Each chunk becomes a `minimax/h3-max/text-to-video/lora` clip (480p, square), made with [`lovis93/studio-1939-old-animation-lora-minimax-h3`](https://huggingface.co/lovis93/studio-1939-old-animation-lora-minimax-h3) (trigger `gulliv3r,`). H3 generates the voice-over itself from the prompt.
-4. Three clips are generated ahead of playback. Each time one finishes, the next one starts, so playback begins after the first clip. If you stop the video, no further clips are started or billed.
+3. Each chunk becomes a `minimax/h3-max/text-to-video/lora` clip (768p, square), edited into 5-second shots with hard cuts, made with [`lovis93/studio-1939-old-animation-lora-minimax-h3`](https://huggingface.co/lovis93/studio-1939-old-animation-lora-minimax-h3) (trigger `gulliv3r,`). H3 generates the voice-over itself from the prompt.
+4. Clips are generated one at a time: the first one plays as soon as it's ready, and the next one is generated while it plays. If you stop the video, no further clips are started or billed.
 
 The cost is about $0.75 per 15-second clip, or roughly $1.25 per 100 words.
 
