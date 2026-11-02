@@ -1,6 +1,6 @@
 # Claude Buddy
 
-<p align="center"><img src="docs/buddy.gif" width="720" alt="Claude Buddy, a small round ivory character, hopping over a Claude Code answer"></p>
+<p align="center"><img src="docs/buddy.gif" width="460" alt="Claude Buddy, a small round ivory character, hopping over a Claude Code answer"></p>
 
 A tiny animated companion that floats over VS Code and reacts to what Claude Code is doing. It thinks while Claude works, cheers when it's done and frowns at errors. Ask it and it reads the answer out loud, or turns it into a short 1939-style cartoon explainer. *Still a prototype.*
 
