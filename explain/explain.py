@@ -84,47 +84,73 @@ def llm_json(prompt):
     return json.loads(re.sub(r"^```(?:json)?|```$", "", content.strip()).strip())
 
 
-SCENE_RULES = """Each scene is a 1939 golden-age hand-painted cartoon shot (2-3 English sentences) that ILLUSTRATES the passage with
-a visual metaphor: whimsical machines, places, objects, little animals or people in action, a gentle camera move.
-Vary the environments from one scene to the next while keeping one coherent little world.
+SHOT_RULES = """Each shot is a 1939 golden-age hand-painted cartoon shot (1-2 English sentences) that ILLUSTRATES its words with
+a visual metaphor: whimsical machines, places, objects, little animals or people in action. Make it feel like a real edited
+cartoon: vary framing between shots (wide establishing shot, close-up, reaction shot, low angle...), give each shot clear action.
+Shots inside one passage share one little world, and the next passage can move to a new place.
 STRICT: absolutely no writing anywhere — no paper, books, letters, signs, screens, labels, numbers or text of any kind.
 Nobody on screen talks to the camera."""
-
-
-def plan():
-    raw = (RUN / "input.txt").read_text()
-    text = clean(raw)
-    if MODE == "summary":
-        d = llm_json(f"""You turn an assistant's answer into a short 1939 newsreel explainer.
-Write a spoken summary of about 50 words (never more than 55) in the SAME language as the answer, natural to hear,
-no code, no file paths, no lists. Then one scene for it.
-{SCENE_RULES}
-Return JSON: {{"language": "<language name in English>", "chunks": [{{"text": "<summary>", "scene": "<scene>"}}]}}
-
-ANSWER:
-{text}""")
-        return d.get("language", "French"), d["chunks"][:1]
-    parts = chunks_of(text)
-    d = llm_json(f"""Here are {len(parts)} consecutive passages of an assistant's answer, read aloud verbatim as a 1939 newsreel.
-Write one scene per passage, in the same order.
-{SCENE_RULES}
-Return JSON: {{"language": "<language of the passages, in English>", "scenes": ["<scene 1>", ...]}}  (exactly {len(parts)} scenes)
-
-PASSAGES:
-""" + "\n".join(f"{i + 1}. {p}" for i, p in enumerate(parts)))
-    scenes = d.get("scenes", [])
-    scenes += ["A whimsical golden-age cartoon workshop full of spinning brass machines and puffing little chimneys."] * (len(parts) - len(scenes))
-    return d.get("language", "French"), [{"text": p, "scene": s} for p, s in zip(parts, scenes)]
 
 
 def duration(words):
     return 5 if words <= 18 else 10 if words <= 38 else 15
 
 
+def thirds(text, n):
+    """Coupe un passage en n morceaux de mots à peu près égaux (un par plan de 5 s)."""
+    w = text.split()
+    k = max(1, round(len(w) / n))
+    return [" ".join(w[i * k:(i + 1) * k] if i < n - 1 else w[i * k:]) for i in range(n)]
+
+
+def plan():
+    raw = (RUN / "input.txt").read_text()
+    text = clean(raw)
+    if MODE == "summary":
+        d = llm_json(f"""You turn an assistant's answer into a short 1939 newsreel explainer of 15 seconds.
+Write a spoken summary of about 50 words (never more than 55) in the SAME language as the answer, natural to hear,
+no code, no file paths, no lists. Then split the summary into 3 consecutive parts and write one shot for each part
+(3 shots of 5 seconds, separated by hard cuts).
+{SHOT_RULES}
+Return JSON: {{"language": "<language name in English>", "text": "<summary>", "shots": ["<shot 1>", "<shot 2>", "<shot 3>"]}}
+
+ANSWER:
+{text}""")
+        return d.get("language", "French"), [{"text": d["text"], "shots": d.get("shots", [])[:3]}]
+    parts = chunks_of(text)
+    groups = [thirds(p, duration(len(p.split())) // 5) for p in parts]
+    listing = "\n".join(f"Passage {i + 1}:\n" + "\n".join(f"  - shot {j + 1}: {g}" for j, g in enumerate(gs))
+                        for i, gs in enumerate(groups))
+    d = llm_json(f"""These consecutive passages of an assistant's answer are read aloud verbatim as a 1939 newsreel.
+Each passage is one video clip edited into 5-second shots separated by hard cuts; each shot shows the words listed for it.
+Write every shot, in order.
+{SHOT_RULES}
+Return JSON: {{"language": "<language of the passages, in English>", "passages": [["<shot 1>", "<shot 2>", ...], ...]}}
+(exactly {len(parts)} passages, each with exactly the number of shots listed)
+
+{listing}""")
+    out = d.get("passages", [])
+    fallback = "A whimsical golden-age cartoon workshop full of spinning brass machines and puffing little chimneys."
+    chunks = []
+    for i, (p, gs) in enumerate(zip(parts, groups)):
+        shots = out[i] if i < len(out) and isinstance(out[i], list) else []
+        shots = (shots + [fallback] * len(gs))[:len(gs)]
+        chunks.append({"text": p, "shots": shots})
+    return d.get("language", "French"), chunks
+
+
+def visuals(shots):
+    """Plans de 5 s avec coupes franches, comme un vrai montage."""
+    if len(shots) == 1:
+        return shots[0]
+    return " ".join(f"{'Shot' if j == 0 else 'Hard cut to shot'} {j + 1} ({5 * j}-{5 * j + 5}s): {sh}" for j, sh in enumerate(shots))
+
+
 def make_clip(i, chunk, language):
     words = len(chunk["text"].split())
-    prompt = (f"gulliv3r, 1939 hand-painted cartoon, warm watercolor backgrounds. {chunk['scene']} "
-              f"Off-screen narrator voice-over only, nobody on screen speaks: a brisk, enthusiastic 1939 {language} newsreel announcer, "
+    prompt = (f"gulliv3r, 1939 hand-painted cartoon, warm watercolor backgrounds, edited in several shots with hard cuts. "
+              f"{visuals(chunk['shots'])} "
+              f"One continuous off-screen narrator voice-over across all shots, nobody on screen speaks: a brisk, enthusiastic 1939 {language} newsreel announcer, "
               f"speaking quite fast and very clearly, says exactly: \"{chunk['text']}\" "
               f"Light vintage orchestral music very low under the voice. No text, no subtitles.")
     body = {"prompt": prompt, "duration": duration(words), "resolution": "480P", "aspect_ratio": "1:1",
