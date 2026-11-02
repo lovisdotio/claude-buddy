@@ -1,5 +1,5 @@
 #!/opt/homebrew/bin/python3.12
-"""Mode vidéo du buddy : un texte → des clips H3 Max (LoRA Studio 1939) avec voix off d'actualités.
+"""Mode vidéo du buddy : un texte → des clips H3 Max Turbo (style 1939 décrit dans le prompt) avec voix off d'actualités.
 
 Usage : explain.py <full|summary> <dossier>   (FAL_KEY dans l'environnement, jamais sur disque)
 - lit <dossier>/input.txt
@@ -16,9 +16,9 @@ KEY = os.environ["FAL_KEY"]
 MODE, RUN = sys.argv[1], Path(sys.argv[2])
 LLM_URL = "https://fal.run/openrouter/router/openai/v1/chat/completions"
 LLM_MODEL = "google/gemini-3-flash-preview"
-H3 = "minimax/h3-max/text-to-video/lora"
-LORA = ("https://huggingface.co/lovis93/studio-1939-old-animation-lora-minimax-h3/resolve/"
-        "19214d4c3989de6caca673d534d0d4b16b73b0f7/studio1939-strong.safetensors")
+H3 = "minimax/h3-max-turbo/text-to-video"   # endpoint public, sans LoRA : le style 1939 est décrit dans le prompt
+STYLE = ("1939 golden-age hand-painted cel animation, classic theatrical cartoon short: rubber-hose characters, "
+         "lush watercolor painted backgrounds, warm saturated Technicolor palette, soft film grain and gentle gate weave")
 WORDS_PER_CLIP = 60          # débit validé par Lovis : ~60 mots en 15 s, « pas plus rapide »
 AHEAD = 1                    # un seul clip à la fois : le 1er se joue pendant que le suivant se génère (arrêt = rien d'autre payé)
 
@@ -148,13 +148,13 @@ def visuals(shots):
 
 def make_clip(i, chunk, language):
     words = len(chunk["text"].split())
-    prompt = (f"gulliv3r, 1939 hand-painted cartoon, warm watercolor backgrounds, edited in several shots with hard cuts. "
+    prompt = (f"{STYLE}, edited in several shots with hard cuts. "
               f"{visuals(chunk['shots'])} "
               f"One continuous off-screen narrator voice-over across all shots, nobody on screen speaks: a brisk, enthusiastic 1939 {language} newsreel announcer, "
               f"speaking quite fast and very clearly, says exactly: \"{chunk['text']}\" "
               f"Light vintage orchestral music very low under the voice. No text, no subtitles.")
     body = {"prompt": prompt, "duration": duration(words), "resolution": "768P", "aspect_ratio": "1:1",
-            "prompt_expansion_mode": "disabled", "loras": [{"path": LORA, "scale": 1.0}]}
+            "prompt_expansion_mode": "disabled"}
     for attempt in range(3):
         try:
             try:

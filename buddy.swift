@@ -714,7 +714,7 @@ final class ExplainPanel: NSObject {
             v.addSubview(l)
         }
         let head = words.isEmpty ? "No answer to read yet." :
-            "\(clips) video\(clips > 1 ? "s" : "") · \(words.count) words · ~\(clips * 15)s · ~\(money(Double(clips) * 0.75))"
+            "\(clips) video\(clips > 1 ? "s" : "") · \(words.count) words · ~\(clips * 15)s · ~\(money(Double(clips) * 15 * 0.0175))"
         label(head, 14, .semibold, .white, y: H - 30)
         if !words.isEmpty {
             let a = words.prefix(4).joined(separator: " "), b = words.suffix(4).joined(separator: " ")
