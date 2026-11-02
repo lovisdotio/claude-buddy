@@ -110,7 +110,7 @@ final class DragView: NSView {
     }
     override func mouseDragged(with event: NSEvent) {
         let p = NSEvent.mouseLocation
-        if !dragging, hypot(p.x - start.x, p.y - start.y) > 4 { dragging = true }
+        if !dragging, hypot(p.x - start.x, p.y - start.y) > 6 { dragging = true }
         if dragging { window?.setFrameOrigin(NSPoint(x: origin.x + p.x - start.x, y: origin.y + p.y - start.y)) }
     }
     override func mouseUp(with event: NSEvent) {
@@ -294,10 +294,7 @@ final class App: NSObject, NSApplicationDelegate {
 
     func clicked() {
         clickEffect()
-        if current == "talking" || fetching || (streamer?.active ?? false) || (audio?.isPlaying ?? false) {
-            speechID += 1; fetching = false     // annule aussi une voix encore en chargement
-            stopVoice(); setState("idle"); lastRaw = "idle"; show("idle"); return
-        }
+        if voiceBusy { hush(); return }
         let pin = pinnedSession()
         if !pin.isEmpty { currentSid = pin }
         setState("thinking"); lastRaw = "thinking"; show("thinking", variant: "think-dots")
@@ -391,7 +388,19 @@ final class App: NSObject, NSApplicationDelegate {
     }
 
     /// Lâché sur un texte : capture sous lui, OCR, et lecture de la réponse complète correspondante.
+    /// Il parle, prépare sa voix ou joue la phrase d'attente.
+    var voiceBusy: Bool {
+        current == "talking" || fetching || (streamer?.active ?? false) || (audio?.isPlaying ?? false) || (prepPlayer?.isPlaying ?? false)
+    }
+
+    /// Arrêt total : la voix, son chargement et la phrase d'attente. Un nouveau clic relance la lecture.
+    func hush() {
+        speechID += 1; fetching = false
+        stopVoice(); setState("idle"); lastRaw = "idle"; show("idle")
+    }
+
     func dropped() {
+        if voiceBusy { hush(); return }          // un clic un peu « glissé » pendant qu'il parle = stop, pas relecture
         pos = NSPoint(x: window.frame.minX + pad, y: window.frame.minY + pad); target = pos
         // il « s'installe » sur la conversation la plus proche
         if let (sid, _) = anchors.min(by: { hypot($0.value.x - pos.x, $0.value.y - pos.y) < hypot($1.value.x - pos.x, $1.value.y - pos.y) }) {
@@ -729,8 +738,17 @@ final class ExplainPanel: NSObject {
 
 final class TapView: NSView {
     var onTap: (() -> Void)?
+    private var start = NSPoint.zero, origin = NSPoint.zero, dragging = false
     override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
-    override func mouseUp(with event: NSEvent) { onTap?() }
+    override func mouseDown(with event: NSEvent) {
+        start = NSEvent.mouseLocation; origin = window?.frame.origin ?? .zero; dragging = false
+    }
+    override func mouseDragged(with event: NSEvent) {
+        let p = NSEvent.mouseLocation
+        if !dragging, hypot(p.x - start.x, p.y - start.y) > 6 { dragging = true }
+        if dragging { window?.setFrameOrigin(NSPoint(x: origin.x + p.x - start.x, y: origin.y + p.y - start.y)) }
+    }
+    override func mouseUp(with event: NSEvent) { if !dragging { onTap?() }; dragging = false }
 }
 
 /// La boule s'ouvre en grand cercle et joue les clips à la suite, avec le son ; anneau rose = avancement.
@@ -882,13 +900,30 @@ extension App {
     /// Ouvre le panneau avec la dernière réponse de la conversation suivie (modifiable, sélectionnable).
     @objc func openExplain() {
         App.explainPanel?.panel.orderOut(nil)
-        let last = (try? String(contentsOf: home.appendingPathComponent("last.txt"), encoding: .utf8)) ?? ""
-        // la réponse la plus récente, toutes conversations confondues = celle qu'on vient de lire
-        let text = App.latestAnswer ?? answers[currentSid] ?? last
-        let p = ExplainPanel(text: text, near: ballRect())
-        p.onLaunch = { [weak self] t, mode in self?.launchExplain(t, mode: mode) }
-        App.explainPanel = p
-        p.panel.orderFrontRegardless()
+        if voiceBusy { hush() }
+        show("thinking", variant: "think-scan")
+        let f = window.frame
+        let under = NSRect(x: f.midX - 450, y: f.midY - 60, width: 900, height: 120)
+        let region = NSRect(x: f.midX - 380, y: f.minY, width: 760, height: 420)
+        let wid = CGWindowID(window.windowNumber), mainH = NSScreen.screens.first?.frame.height ?? 0
+        Task {
+            // d'abord la réponse juste sous lui, sinon la dernière réponse visible derrière lui
+            let below = await self.ocr(under, excluding: wid, mainH: mainH)
+            var behind = below.isEmpty ? nil : self.match(below, mode: "--under")
+            if behind == nil {
+                let seen = await self.ocr(region, excluding: wid, mainH: mainH)
+                behind = seen.isEmpty ? nil : self.match(seen, mode: "--last")
+            }
+            let found = behind
+            await MainActor.run {
+                self.show("idle")
+                guard let text = found, !text.isEmpty else { self.show("error", variant: "err-confused"); return }
+                let p = ExplainPanel(text: text, near: self.ballRect())
+                p.onLaunch = { [weak self] t, mode in self?.launchExplain(t, mode: mode) }
+                App.explainPanel = p
+                p.panel.orderFrontRegardless()
+            }
+        }
     }
 
     func launchExplain(_ text: String, mode: String) {
