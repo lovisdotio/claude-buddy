@@ -4,7 +4,7 @@ A tiny animated companion that floats over VS Code and reacts to what Claude Cod
 
 Everything is generated with [fal](https://fal.ai):
 
-- **The character:** one Nano Banana Pro image, plus 100+ four-second MiniMax H3 Max image-to-video loops. Each loop starts and ends on the same frame, so they chain with no visible cut. They were generated once for about $12, and nothing is generated live for the character itself.
+- **The character:** 100+ four-second MiniMax H3 Max video loops. Each loop starts and ends on the same frame, so they chain with no visible cut. They were generated once for about $12, and nothing is generated live for the character itself.
 - **The voice:** ElevenLabs v4 Turbo, streamed as PCM. The first sound plays about 0.5 s after the request.
 - **1939 video mode:** the answer becomes a series of 15-second H3 Max clips with an old-newsreel voice-over. Each clip uses the Studio 1939 LoRA and shows an illustrated scene that matches what is being said.
 
