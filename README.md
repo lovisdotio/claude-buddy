@@ -39,6 +39,7 @@ The buddy is only visible while VS Code is the frontmost app. It follows whichev
 1. The answer is cleaned (code blocks, links and markdown are removed) and split at sentence ends into chunks of about 60 words.
 2. A fast LLM (`google/gemini-3-flash-preview` through fal's OpenRouter endpoint) writes one 1939 cartoon scene per chunk. The scenes are visual metaphors, with no writing on screen.
 3. Each chunk becomes a [`minimax/h3-max-turbo/text-to-video`](https://fal.ai/models/minimax/h3-max-turbo/text-to-video) clip (768p, square, no LoRA): the 1939 cartoon style is described in the prompt, and each clip is edited into 5-second shots with hard cuts. H3 generates the voice-over itself from the prompt.
+   Optional: put the URL of an H3 LoRA in `explain/lora.txt` (local, ignored by git) to use `minimax/h3-max/text-to-video/lora` with that LoRA instead.
 4. Clips are generated one at a time: the first one plays as soon as it's ready, and the next one is generated while it plays. If you stop the video, no further clips are started or billed.
 
 The cost is $0.0175 per second, so about $0.26 per 15-second clip, or roughly $0.45 per 100 words.

@@ -17,6 +17,11 @@ MODE, RUN = sys.argv[1], Path(sys.argv[2])
 LLM_URL = "https://fal.run/openrouter/router/openai/v1/chat/completions"
 LLM_MODEL = "google/gemini-3-flash-preview"
 H3 = "minimax/h3-max-turbo/text-to-video"   # endpoint public, sans LoRA : le style 1939 est décrit dans le prompt
+# Optionnel : explain/lora.txt (local, jamais publié) = URL d'une LoRA H3 Studio 1939 → endpoint t2v/lora + trigger gulliv3r
+LORA_FILE = Path(__file__).with_name("lora.txt")
+LORA = LORA_FILE.read_text().strip() if LORA_FILE.exists() else ""
+if LORA:
+    H3 = "minimax/h3-max/text-to-video/lora"
 STYLE = ("1939 golden-age hand-painted cel animation, classic theatrical cartoon short: rubber-hose characters, "
          "lush watercolor painted backgrounds, warm saturated Technicolor palette, soft film grain and gentle gate weave")
 WORDS_PER_CLIP = 60          # débit validé par Lovis : ~60 mots en 15 s, « pas plus rapide »
@@ -155,6 +160,9 @@ def make_clip(i, chunk, language):
               f"Light vintage orchestral music very low under the voice. No text, no subtitles.")
     body = {"prompt": prompt, "duration": duration(words), "resolution": "768P", "aspect_ratio": "1:1",
             "prompt_expansion_mode": "disabled"}
+    if LORA:
+        body["prompt"] = "gulliv3r, " + prompt
+        body["loras"] = [{"path": LORA, "scale": 1.0}]
     for attempt in range(3):
         try:
             try:
