@@ -2,6 +2,10 @@
 
 A tiny animated companion that floats over VS Code and reacts to what Claude Code is doing. It thinks while Claude works, cheers when it's done and frowns at errors. Ask it and it reads the answer out loud, or turns it into a short 1939-style cartoon explainer.
 
+[![Claude Buddy demo: an answer about Gaussian splatting turned into a 1939 cartoon explainer](docs/demo.jpg)](docs/demo.mp4)
+
+▶ [Watch the demo (52 s, with sound)](docs/demo.mp4). *Still a prototype.*
+
 Everything is generated with [fal](https://fal.ai):
 
 - **The character:** 100+ four-second MiniMax H3 Max video loops. Each loop starts and ends on the same frame, so they chain with no visible cut. They were generated once for about $12, and nothing is generated live for the character itself.

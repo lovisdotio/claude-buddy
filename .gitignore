@@ -12,6 +12,7 @@
 !/eye/
 /eye/*.app
 !/explain/
+!/docs/
 /explain/*
 !/explain/explain.py
 __pycache__/
