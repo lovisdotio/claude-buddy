@@ -6,6 +6,12 @@ A tiny animated companion that floats over VS Code and reacts to what Claude Cod
 
 ▶ [Watch the demo (52 s, with sound)](docs/demo.mp4). *Still a prototype.*
 
+## Meet the buddy
+
+It has 100+ expressions, and picks one from what Claude is doing and saying.
+
+![The buddy's expressions: hello, sleepy, idea, editing code, talking, whispering, waiting, done, shipped, error, confused, thanks](docs/expressions.gif)
+
 Everything is generated with [fal](https://fal.ai):
 
 - **The character:** 100+ four-second MiniMax H3 Max video loops. Each loop starts and ends on the same frame, so they chain with no visible cut. They were generated once for about $12, and nothing is generated live for the character itself.
