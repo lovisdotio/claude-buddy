@@ -764,6 +764,8 @@ final class VideoBubble: NSObject {
     var onFinish: (() -> Void)?
     var timer: Timer?
     var closing = false
+    var waiting = false                // fin d'un clip, le suivant n'est pas encore prêt
+    let loader = CALayer()             // petit chargement posé sur la dernière image
 
     init(ball: NSRect, smallSize: CGFloat) {
         let vis = NSScreen.main?.visibleFrame ?? .zero
@@ -810,6 +812,25 @@ final class VideoBubble: NSObject {
         progress.lineWidth = 3; progress.lineCap = .round; progress.strokeEnd = 0
         group.addSublayer(progress)
 
+        // petit chargement : pastille sombre + arc rose qui tourne, au centre de la dernière image
+        let L: CGFloat = 54
+        loader.frame = CGRect(x: (D - L) / 2, y: (D - L) / 2, width: L, height: L)
+        loader.cornerRadius = L / 2
+        loader.backgroundColor = NSColor(calibratedWhite: 0, alpha: 0.55).cgColor
+        let arc = CAShapeLayer()
+        arc.frame = loader.bounds
+        arc.path = CGPath(ellipseIn: loader.bounds.insetBy(dx: 12, dy: 12), transform: nil)
+        arc.fillColor = nil; arc.lineWidth = 3.5; arc.lineCap = .round
+        arc.strokeColor = NSColor(calibratedRed: 1, green: 0.78, blue: 0.86, alpha: 1).cgColor
+        arc.strokeStart = 0; arc.strokeEnd = 0.3
+        let spin = CABasicAnimation(keyPath: "transform.rotation.z")
+        spin.fromValue = 0; spin.toValue = -2 * Double.pi; spin.duration = 0.9; spin.repeatCount = .infinity
+        arc.add(spin, forKey: "spin")
+        loader.addSublayer(arc)
+        loader.opacity = 0
+        group.addSublayer(loader)
+        player.actionAtItemEnd = .pause       // on avance à la main : sans clip suivant, la dernière image reste affichée
+
         v.onTap = { [weak self] in self?.close() }
         NotificationCenter.default.addObserver(self, selector: #selector(itemEnded(_:)), name: .AVPlayerItemDidPlayToEndTime, object: nil)
 
@@ -824,17 +845,32 @@ final class VideoBubble: NSObject {
 
     func add(_ url: URL) {
         let item = AVPlayerItem(url: url)
-        if player.items().isEmpty { player.insert(item, after: nil); player.play() }
-        else { player.insert(item, after: player.items().last) }
         queued += 1
+        if player.items().isEmpty { player.insert(item, after: nil); player.play(); return }
+        player.insert(item, after: player.items().last)
+        if waiting { advance() }               // on attendait ce clip : on repart tout de suite
+    }
+
+    func advance() {
+        waiting = false
+        setLoader(false)
+        player.advanceToNextItem()
+        player.play()
+    }
+
+    func setLoader(_ on: Bool) {
+        CATransaction.begin(); CATransaction.setAnimationDuration(0.25)
+        loader.opacity = on ? 1 : 0
+        CATransaction.commit()
     }
 
     @objc func itemEnded(_ n: Notification) {
         // les boucles muettes du bot envoient aussi cette notification : on ne compte que nos clips
         guard let item = n.object as? AVPlayerItem, (item.asset as? AVURLAsset)?.url.path.contains("/explain/runs/") == true else { return }
         played += 1
-        if played >= expected { close() }
-        // sinon : le clip suivant est soit déjà en file (AVQueuePlayer enchaîne), soit en route (add relancera la lecture)
+        if played >= expected { close(); return }
+        if player.items().count > 1 { advance() }      // le clip suivant est prêt : on enchaîne
+        else { waiting = true; setLoader(true) }       // sinon : dernière image + petit chargement, add() relancera
     }
 
     func tick() {
