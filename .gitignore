@@ -1,0 +1,18 @@
+# liste blanche : seul le code et les assets du bot sont publiés (pas les journaux ni les réponses lues)
+/*
+!/.gitignore
+!/README.md
+!/build.sh
+!/buddy.swift
+!/hook.py
+!/match.py
+!/expressions.py
+!/clips/
+!/prompts/
+!/eye/
+/eye/*.app
+!/explain/
+/explain/*
+!/explain/explain.py
+__pycache__/
+.DS_Store
