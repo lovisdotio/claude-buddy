@@ -1,16 +1,20 @@
 # Claude Buddy
 
-A tiny animated companion that floats over VS Code and reacts to what Claude Code is doing. It thinks while Claude works, cheers when it's done and frowns at errors. Ask it and it reads the answer out loud, or turns it into a short 1939-style cartoon explainer.
+<p align="center"><img src="docs/buddy.gif" width="240" alt="Claude Buddy, a small round ivory character, waving hello"></p>
 
-[![Claude Buddy demo: an answer about Gaussian splatting turned into a 1939 cartoon explainer](docs/demo.jpg)](docs/demo.mp4)
-
-▶ [Watch the demo (52 s, with sound)](docs/demo.mp4). *Still a prototype.*
+A tiny animated companion that floats over VS Code and reacts to what Claude Code is doing. It thinks while Claude works, cheers when it's done and frowns at errors. Ask it and it reads the answer out loud, or turns it into a short 1939-style cartoon explainer. *Still a prototype.*
 
 ## Meet the buddy
 
 It has 100+ expressions, and picks one from what Claude is doing and saying.
 
 ![The buddy's expressions: hello, sleepy, idea, editing code, talking, whispering, waiting, done, shipped, error, confused, thanks](docs/expressions.gif)
+
+## 1939 video mode in action
+
+[![Claude Buddy demo: an answer about Gaussian splatting turned into a 1939 cartoon explainer](docs/demo.jpg)](docs/demo.mp4)
+
+▶ [Watch the demo (52 s, with sound)](docs/demo.mp4)
 
 Everything is generated with [fal](https://fal.ai):
 
